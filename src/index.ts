@@ -1,7 +1,11 @@
 import { connection, server as WebSocketServer } from "websocket";
+import * as http from "http";
 
-import http from "http";
-import { IncomingMessage, SupportedMessage } from "./message";
+import {
+  OutgoingMessage,
+  SupportedMessage as OutgoingSupportMessages,
+} from "./messages/outgoingMessages";
+import { IncomingMessage, SupportedMessage } from "./messages/incomingMessages";
 import { UserManager } from "./UserManager";
 import { InMemoryStore } from "./store/InMemoryStore";
 
@@ -65,16 +69,42 @@ function messageHandler(ws: connection, message: IncomingMessage) {
   if (message.type === SupportedMessage.SendMessage) {
     const payload = message.payload;
     const user = userManager.getUser(payload.roomId, payload.userId);
-    if(!user) {
-        console.error("User not in the db");
+    if (!user) {
+      console.error("User not in the db");
+      return;
+    }
+    let chat = store.addChat(payload.userId, user.name, payload.roomId, payload.message);
+    if(!chat){
         return;
     }
-    store.addChat(payload.userId,user.name, payload.roomId, payload.message);
     // TODO add broadcast logic here
+    const OutgoingPayload: OutgoingMessage = {
+      type: OutgoingSupportMessages.AddChat,
+      payload: {
+        chatId: chat.id,
+        roomId: payload.roomId,
+        message: payload.message,
+        name: user.name,
+        upvotes: 0,
+      },
+    };
+    userManager.broadcast(payload.roomId, payload.userId, OutgoingPayload);
   }
-  if(message.type === SupportedMessage.UpvoteMessage) {
+  if (message.type === SupportedMessage.UpvoteMessage) {
     const payload = message.payload;
-        store.upvote(payload.userId, payload.roomId, payload.chatId);
+   const chat =  store.upvote(payload.userId, payload.roomId, payload.chatId);
+   if(!chat){
+    return;
+   }
+    const OutgoingPayload: OutgoingMessage = {
+      type: OutgoingSupportMessages.updateChat,
+      payload: {
+        chatId: payload.chatId,
+        roomId: payload.roomId,
+        upvotes: chat.upvotes.length,
+      },
+    };
 
+    userManager.broadcast(payload.roomId, payload.userId, OutgoingPayload);
   }
 }
