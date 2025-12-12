@@ -25,7 +25,7 @@ server.listen(8080, function () {
 const wsServer = new WebSocketServer({
   httpServer: server,
 
-  autoAcceptConnections: true,
+  autoAcceptConnections: false,
 });
 
 function originIsAllowed(origin: string) {
@@ -48,22 +48,21 @@ wsServer.on("request", function (request) {
     // todo: add rate limitting logic here
     if (message.type === "utf8") {
       try {
+        console.log("india with message "+ message.utf8Data);
         messageHandler(connection, JSON.parse(message.utf8Data));
       } catch (e) {}
       // console.log('Received Message: ' + message.utf8Data);
       // connection.sendUTF(message.utf8Data);
     }
   });
-  connection.on("close", function (reasonCode, description) {
-    console.log(
-      new Date() + " Peer " + connection.remoteAddress + " disconnected."
-    );
-  });
+  
 });
 
 function messageHandler(ws: connection, message: IncomingMessage) {
+
   if (message.type == SupportedMessage.JoinRoom) {
     const payload = message.payload;
+    
     userManager.addUser(payload.name, payload.userId, payload.roomId, ws);
   }
   if (message.type === SupportedMessage.SendMessage) {
@@ -77,6 +76,7 @@ function messageHandler(ws: connection, message: IncomingMessage) {
     if(!chat){
         return;
     }
+
     // TODO add broadcast logic here
     const OutgoingPayload: OutgoingMessage = {
       type: OutgoingSupportMessages.AddChat,
@@ -96,6 +96,7 @@ function messageHandler(ws: connection, message: IncomingMessage) {
    if(!chat){
     return;
    }
+   
     const OutgoingPayload: OutgoingMessage = {
       type: OutgoingSupportMessages.updateChat,
       payload: {

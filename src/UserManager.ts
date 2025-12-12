@@ -25,33 +25,37 @@ export class UserManager {
       name,
       conn: socket,
     });
+    socket.on("close", (reasonCode, description) => {
+      this.removeUser(roomId, userId);
+    });
   }
   removeUser(roomId: string, userId: string) {
+    console.log("removed user");
     const users = this.rooms.get(roomId)?.users;
     if (users) {
       users.filter(({ id }) => id !== userId);
     }
   }
-  getUser(roomId: string, userId : string): User | null {
-    const user = this.rooms.get(roomId)?.users.find(({id}) => id === userId);
+  getUser(roomId: string, userId: string): User | null {
+    const user = this.rooms.get(roomId)?.users.find(({ id }) => id === userId);
     return user ?? null;
   }
 
   broadcast(roomId: string, userId: string, message: OutgoingMessage) {
     const user = this.getUser(roomId, userId);
-    if(!user){
-        console.error("User not found");
-        return;
+    if (!user) {
+      console.error("User not found");
+      return;
     }
 
     const room = this.rooms.get(roomId);
-    if(!room){
-        console.error("Room not found");
-        return;
+    if (!room) {
+      console.error("Room not found");
+      return;
     }
-
-    room.users.forEach(({conn}) => {
-        conn.sendUTF(JSON.stringify(message));
-    })
+    room.users.forEach(({ conn, id }) => {
+      console.log("outgoing message" + JSON.stringify(message));
+      conn.sendUTF(JSON.stringify(message));
+    });
   }
 }
