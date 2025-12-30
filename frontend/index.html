@@ -6,7 +6,7 @@
 <body>
     <script>
         const ws = new WebSocket("ws://localhost:8080",['echo-protocol'] );
-        const userId = Math.floor(Math.random() * 1000);
+        const userId = String(Math.floor(Math.random() * 1000));
         ws.onopen = function(){
             ws.send(JSON.stringify({
                 type: "JOIN_ROOM",
@@ -20,18 +20,38 @@
         ws.onmessage = function(event){
             try {
                 const {payload, type} = JSON.parse(event.data);
-                if(type === "ADD_CHAT") {
+                if (type === "ADD_CHAT") {
                     const textNode = document.createElement("p");
-                    textNode.innerHTML = payload.message + `{${payload.upvotes}} `
+                    textNode.innerHTML = payload.message;
+                    const buttonNode = document.createElement("button");
+                    buttonNode.innerHTML = `(${payload.upvotes})`;
+                    buttonNode.setAttribute("onClick", `sendUpvote('${payload.chatId}')`);
+                    buttonNode.setAttribute("id", `message-${payload.chatId}`);
                     document.getElementById("messages").appendChild(textNode);
+                    document.getElementById("messages").appendChild(buttonNode);
                 }
-
+                if (type === "UPDATE_CHAT") {
+                    const buttonNode = document.getElementById(`message-${payload.chatId}`);
+                    if (buttonNode) {
+                        buttonNode.innerHTML = `(${payload.upvotes})`;
+                    }
+                }
             } catch(e){
                 console.error(e);
             }
         }
+        function sendUpvote(chatId){
+            ws.send(JSON.stringify({
+                type: "UPVOTE_MESSAGE",
+                payload: {
+                    userId: userId,
+                    roomId: "2",
+                    chatId
+                }
+            }))
+        }
         function sendChat() {
-            
+
             ws.send(JSON.stringify({
                 type: "SEND_MESSAGE",
                 payload: {

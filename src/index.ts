@@ -1,12 +1,13 @@
-import { connection, server as WebSocketServer } from "websocket";
-import * as http from "http";
-
 import {
   OutgoingMessage,
   SupportedMessage as OutgoingSupportMessages,
 } from "./messages/outgoingMessages";
-import { IncomingMessage, SupportedMessage } from "./messages/incomingMessages";
+import { connection, server as WebSocketServer } from "websocket";
+import * as http from "http";
+
 import { UserManager } from "./UserManager";
+import { IncomingMessage, SupportedMessage } from "./messages/incomingMessages";
+
 import { InMemoryStore } from "./store/InMemoryStore";
 
 const server = http.createServer(function (request: any, response: any) {
@@ -24,7 +25,6 @@ server.listen(8080, function () {
 
 const wsServer = new WebSocketServer({
   httpServer: server,
-
   autoAcceptConnections: false,
 });
 
@@ -78,7 +78,7 @@ function messageHandler(ws: connection, message: IncomingMessage) {
     }
 
     // TODO add broadcast logic here
-    const OutgoingPayload: OutgoingMessage = {
+    const outgoingPayload: OutgoingMessage = {
       type: OutgoingSupportMessages.AddChat,
       payload: {
         chatId: chat.id,
@@ -87,8 +87,8 @@ function messageHandler(ws: connection, message: IncomingMessage) {
         name: user.name,
         upvotes: 0,
       },
-    };
-    userManager.broadcast(payload.roomId, payload.userId, OutgoingPayload);
+    }
+    userManager.broadcast(payload.roomId, payload.userId, outgoingPayload);
   }
   if (message.type === SupportedMessage.UpvoteMessage) {
     const payload = message.payload;
@@ -97,8 +97,8 @@ function messageHandler(ws: connection, message: IncomingMessage) {
     return;
    }
    
-    const OutgoingPayload: OutgoingMessage = {
-      type: OutgoingSupportMessages.updateChat,
+    const outgoingPayload: OutgoingMessage = {
+      type: OutgoingSupportMessages.UpdateChat,
       payload: {
         chatId: payload.chatId,
         roomId: payload.roomId,
@@ -106,6 +106,6 @@ function messageHandler(ws: connection, message: IncomingMessage) {
       },
     };
 
-    userManager.broadcast(payload.roomId, payload.userId, OutgoingPayload);
+    userManager.broadcast(payload.roomId, payload.userId, outgoingPayload);
   }
 }
